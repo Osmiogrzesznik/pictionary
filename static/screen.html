@@ -1,0 +1,378 @@
+<!doctype html>
+<title>Screen - pictionary</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<html>
+
+<head>
+    <h1>screen</h1>
+    <script>
+        COMMS = 'socketio'
+    </script>
+    <script src="socket.io.min.js"></script>
+    <script src="socketlogic.js"></script>
+    <script src="vue.js"></script>
+    <script src="canvas.js"></script>
+
+
+
+
+<body>
+    <div id="pictionaryapp">
+        <canvas id="pictionary" height="300" width="400">
+        </canvas>
+        <div id='vue-app'>
+            <div v-if="guessedScreenVisible" class="teamsbtns">
+                <button v-for="team in teams" @click="pointGoesTo(team)">
+                    ${team.name}
+                </button>
+            </div>
+            <button>new game</button>
+            <div v-if="nextPlayerScreenMessageVisible" class="nextPlayerMessageModal">
+                <button @click="nextPlayerConfirmed">Continue</button>
+            </div>
+            <!-- TODO
+            0
+            screen does not receives new teams and players
+            1
+            each screen has to be updated on all that happened when it was off
+            if player had turned on first screen will not now about teams
+            consider using all data packaged and sent on welcome new screen
+            serv sends we_need_full_update players respond with full update and server distributes it to screens
+            MESSSAGE
+            2
+            start game
+            3
+            time counter on both sides -->
+            <div v-if="msgvisible" class="modal">
+                ${textShownMsg}
+            </div>
+
+            <ul class="submenu">
+                <li v-for="team in teams">
+                    team: ${team.name}
+                    <br>points: ${team.points}
+                    <br>players:
+                    <ul class="submenu">
+                        <li v-for="player in team.players">
+                            ${player.name}
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+
+        </div>
+    </div>
+    <script>
+        function TeamsFactory(initialId = 0) {
+            this.nextId = initialId;
+            this.teams = [];
+        }
+
+        function Team(ob) {
+            this.name = ob.name,
+                this.id = ob.id,
+                this.players = ob.players,
+                this.points = ob.points
+        }
+
+        Team.prototype.jso = function () {
+            return {
+                name: this.name,
+                id: this.id,
+                points: this.points
+            }
+        }
+        TeamsFactory.prototype.createTeam = function (ob) {
+            let t = new Team({
+                name: ob.name,
+                id: this.nextId++,
+                players: ob.players,
+                points: ob.points
+            })
+            this.teams.push(t);
+            return t;
+        }
+
+        function PlayersFactory(initialId = 0) {
+            this.nextId = initialId;
+            this.players = [];
+        }
+
+        function Player(ob) {
+            this.id = ob.id,
+                this.name = ob.name,
+                this.picture = ob.picture,
+                this.teamId = ob.teamId;
+        }
+        Player.prototype.jso = function () {
+            return {
+                name: this.name,
+                id: this.id,
+                picture: this.picture,
+                teamId: this.teamId
+            }
+        }
+
+        PlayersFactory.prototype.createPlayer = function (ob) {
+            let p = new Player(ob)
+            p.id = this.nextId++
+            this.players.push(p)
+            return p
+        }
+
+
+        var teamsFactory = new TeamsFactory(0);
+        var playersFactory = new PlayersFactory(0);
+        /*Vue.component(id, [definition])
+
+
+            what if time is up and nobody guesses?
+            pressing guessed sets some value to true
+            and this value is checked always when nextplayer funcions are run*/
+
+        function recv_display_drawn_line(draw_data) {
+            console.log("received:" + JSON.stringify(draw_data))
+            drawLine(ctx, draw_data.x, draw_data.y, 12, true, draw_data.fingerup)
+        }
+
+        function initCanvasAndSocketIO() {
+            // Get the specific canvas element from the HTML document
+            canvas = document.getElementById('pictionary');
+
+            // If the browser supports the canvas tag, get the 2d drawing context for this canvas
+            if (canvas.getContext)
+                ctx = canvas.getContext('2d');
+
+            // Check that we have a valid context to draw on/with before adding event handlers
+            if (ctx) {
+
+                initSocketIO('screen') // function in socketlogic.js
+            }
+        }
+
+        v = new Vue({
+            delimiters: ['${', '}'], // to avoid clash with Jinja2 moustaches
+            el: '#vue-app',
+            data: {
+                guessedScreenVisible: false,
+                pointGoesToScreenVisible: false,
+                nextPlayerScreenMessageVisible: false,
+                // newTeam: {
+                //                 name: "",
+                //                 players: [],
+                //                 points: 0
+                //             },
+                //             newPlayer: {
+                //                 name: '',
+                //                 picture: ``,
+                //                 teamId: null,
+                //             },
+                teamThatWon: null,
+                menuopened: false,
+                socket: null,
+                paused: false,
+                teams: teamsFactory.teams,
+                players: playersFactory.players,
+                fullMesh: fullMesh,
+                timeleft: null,
+                options_roundTime: 360,
+
+                alert: true,
+                msgvisible: false,
+                textShownMsg: '',
+
+                currentplayer: null,
+                currentplayerindex: null,
+            }, // end of data
+            mounted() {
+                initCanvasAndSocketIO()
+                this.socket = socket // this is if html served from python not from external cloud
+                // in case of external site this site must know what ip address of Game Master is
+                /*7this.socket.on('draw', (msg) => {
+                    console.log("Received:", msg.data)
+                    newDrawPosition = msg.data;
+                    this.updateLocalMesh(newDrawPosition)
+                })
+                this.socket.on('welcome_new_player', (msg) => {
+                    console.log("Received:", msg.data)
+                    this.last_received_position = msg.data;
+                })*/
+                socket.on('display_drawn_line', (msg) => {
+                    console.log("Received display_drawn_line:", msg.data)
+                    recv_display_drawn_line(msg.data);
+                });
+                socket.on('clear', (msg) => {
+                    console.log("Received clear:", msg.data)
+                    clearCanvas();
+
+
+                });
+                socket.on('addNewTeam', this.addNewTeam)
+                socket.on('addNewPlayer', this.addNewPlayer)
+                socket.on('options_roundTime', this.set_options_roundTime)
+                socket.on('guessed', this.guessed)
+                socket.on('pointGoesTo', this.pointGoesTo)
+                socket.on('next_player', this.nextplayer)
+                //k socket.on('showNextPlayerMessage', this.showNextPlayerMessage)
+                //socket.on('resetClock', this.resetClock)
+                // socket.on('showNextPlayerMessage', this.showNextPlayerMessage)
+                socket.on('nextPlayerConfirmed', this.nextPlayerConfirmed)
+                socket.on('pause', this.pause)
+                socket.on('unpause', this.unpause)
+                //  socket.on('clearCanvas', this.clearCanvas)
+                socket.on('send_clear', this.send_clear)
+
+            }, // end of mounted
+            methods: {
+                getPlayerTeam(player) {
+                    return this.teams[player.teamId];
+                },
+                unpause() {
+                    this.paused = false
+                },
+                // this is not received over socket, only used locally if needed
+                showMsg(msg, alert = true) {
+                    this.alert = alert;
+                    this.msgvisible = true;
+                    this.textShownMsg = msg;
+                    setTimeout(() => {
+                        this.msgvisible = false
+                    }, 2000)
+                },
+                addNewTeam(socketmsg) {
+                    rcvdTeam = socketmsg.data;
+                    rcvdTeam.players = [];
+                    console.log(rcvdTeam);
+                    let nuTeam = teamsFactory.createTeam(rcvdTeam)
+                    this.showMsg('new team created: ' + nuTeam.name);
+                },
+                addNewPlayer(socketmsg) {
+                    rcvdPlayer = socketmsg.data;
+                    console.log(rcvdPlayer)
+                    let nuPlayer = playersFactory.createPlayer(rcvdPlayer);
+                    let plrTeamId = rcvdPlayer.teamId
+                    let plrTeam = this.teams[plrTeamId]
+                    plrTeam.players.push(nuPlayer); // dont f9rget to push him to teh team on the screen side
+                    // how to send new Player's team over socket, without circular dependencies ? 
+                    // try to assign id (array index)
+                    this.showMsg(
+                        'new player:' + nuPlayer.name +
+                        ' created in team:' + plrTeam.name);
+                },
+                set_options_roundTime(socketmsg) {
+                    let val = socketmsg.data;
+                    console.log('rcvd timeset:' + val)
+                    this.options_roundTime = parseInt(val);
+                },
+                guessed(socketmsg) {
+                    this.guessedScreenVisible = true;
+                },
+                pointGoesTo(socketmsg) {
+                    let team = this.teams[socketmsg.data];
+                    this.guessedScreenVisible = false;
+                    team.points++;
+                    this.teamThatWon = team;
+                    this.pointGoesToScreenVisible = true;
+                },
+                next_player(socketmsg) {
+                    // avoid repeating!!!! 
+                    //other events are sent and will invoke some functions invoked inside 
+
+                    // removed resetClock receiver
+
+                    // cycle through players(teams)array
+                    clearCanvas();
+                    resetClock();
+                    // TODO: like with setting time , screen needs to know what players and teams are available
+                    this.currentplayerindex = this.currentplayerindex === this.players.length - 1 ?
+                        0 : this.currentplayerindex + 1;
+                    this.currentplayer = this.players[this.currentplayerindex];
+                    showNextPlayerMessage();
+                },
+                showNextPlayerMessage() {
+                    this.nextPlayerScreenMessageVisible = true;
+                },
+                nextPlayerConfirmed() {
+                    this.nextPlayerScreenMessageVisible = false;
+                    this.paused = false; //starts clock refresh
+                    socket.emit('nextPlayerConfirmed', {
+                        data: 1
+                    });
+                },
+                resetClock() {
+                    this.timeleft = this.options_roundTime;
+                },
+                pause() {
+                    this.paused = true; //stops clock and canvas
+                },
+
+                clearCanvas() {
+                    // call canvas api
+                    // function
+                    clearCanvas()
+                    this.send_clear()
+                },
+                send_clear() {
+                    socket.emit("clear");
+                    this.saveDrawingToDB(); //should be done byscreen or server 
+                },
+                DONEINSCREENupdateLocalMesh(newDrawPosition) {
+                    this.last_received_position = newDrawPosition;
+                    //{id,x,y}; when deleting use id to identify what was deleted
+                    this.localMesh.push(newDrawPosition);
+                },
+                DONEBYCANVASsendLastDrawnDot() {
+                    //# if somebody accidentally gets disconnected  we need to keep copy of all drawn and deleted dots?
+                    console.log("sending drawn dot:" + this.tosay);
+                    this.socket.emit('draw', {
+                        data: this.lastDrawnDot
+                    })
+                    this.tosay = "";
+                },
+
+            }, // end of methods
+        })
+    </script>
+    </div>
+    <style>
+        body,
+        html {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        .submenu {
+            border: 2px solid #888;
+            background-color: aliceblue;
+            padding: 5px;
+            margin: 5px;
+        }
+
+
+        #pictionaryapp {
+            /* Prevent nearby text being highlighted when accidentally dragging mouse outside confines of the canvas */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+
+
+        #pictionary {
+            height: 45vw;
+            width: 60vw;
+            border: 2px solid #888;
+            border-radius: 4px;
+            position: relative;
+            /* Necessary for correct mouse co-ords in Firefox */
+        }
+    </style>
+</body>
+
+</html>
