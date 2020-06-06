@@ -8,3 +8,10 @@ then use any touch enabled device as drawing pad- remote
 
 uses flask with socket.io as backend and vue on frontend
 system counts the time and chooses players in turns.
+
+requires python 3 installed
+
+```
+pip install flask
+pip install flask-socketio
+```

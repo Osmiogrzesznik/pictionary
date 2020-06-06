@@ -20,21 +20,41 @@
 
 <body>
     <div id="pictionaryapp">
-        <canvas id="pictionary" height="300" width="400">
-        </canvas>
         <div id='vue-app'>
+            <div v-if="nextPlayerScreenMessageVisible" class="modal">
+                <div class="modal-content">
+                    <img :src="currentplayer.picture">
+                    <br>
+                    <span class="points">${currentplayer.name}</span> - Please press continue on remote.
+                    <div class='pointsinfo'>
+                        doesnt have to be always visible just when awaiting nextPlayer
+                        <ul class="submenu">
+                            <li v-for="team in teams">
+                                <span>team: ${team.name}</span> <span class="points">points: ${team.points}</span>
+                                <br>players:
+                                <ul class="submenu">
+                                    <li v-for="player in team.players"
+                                        :class="{currentPlayer:player.id === currentplayerindex}">
+
+                                        ${player.name}
+
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <canvas :class="{pausedCanvasStyle:paused}" id="pictionary" height="300" width="400">
+            </canvas>
+            <div class="timer">${timeleftMMSS}</div>
             <div v-if="guessedScreenVisible" class="teamsbtns">
                 <button v-for="team in teams" @click="pointGoesTo(team)">
                     ${team.name}
                 </button>
             </div>
-            <button>new game</button>
-            <div v-if="nextPlayerScreenMessageVisible" class="nextPlayerMessageModal">
-                <button @click="nextPlayerConfirmed">Continue</button>
-            </div>
+
             <!-- TODO
-            0
-            screen does not receives new teams and players
             1
             each screen has to be updated on all that happened when it was off
             if player had turned on first screen will not now about teams
@@ -42,26 +62,34 @@
             serv sends we_need_full_update players respond with full update and server distributes it to screens
             MESSSAGE
             2
-            start game
+            socket event disconnect should propagate among other connections
             3
-            time counter on both sides -->
+            time counter on both sides 
+        4 
+        easthetical fixes
+        -->
             <div v-if="msgvisible" class="modal">
-                ${textShownMsg}
+                <div class="modal-content">
+                    <span class="close" @click="msgvisible = false">&times;</span>
+                    <p>${textShownMsg}</p>
+                </div>
+
             </div>
-
-            <ul class="submenu">
-                <li v-for="team in teams">
-                    team: ${team.name}
-                    <br>points: ${team.points}
-                    <br>players:
-                    <ul class="submenu">
-                        <li v-for="player in team.players">
-                            ${player.name}
-                        </li>
-                    </ul>
-                </li>
-            </ul>
-
+            <div class='pointsinfo'>
+                doesnt have to be always visible just when awaiting nextPlayer
+                <ul class="submenu">
+                    <li v-for="team in teams">
+                        team: ${team.name}
+                        <br>points: ${team.points}
+                        <br>players:
+                        <ul class="submenu">
+                            <li v-for="player in team.players">
+                                ${player.name}
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
 
         </div>
     </div>
@@ -126,16 +154,11 @@
 
         var teamsFactory = new TeamsFactory(0);
         var playersFactory = new PlayersFactory(0);
-        /*Vue.component(id, [definition])
 
-
-            what if time is up and nobody guesses?
-            pressing guessed sets some value to true
-            and this value is checked always when nextplayer funcions are run*/
 
         function recv_display_drawn_line(draw_data) {
             console.log("received:" + JSON.stringify(draw_data))
-            drawLine(ctx, draw_data.x, draw_data.y, 12, true, draw_data.fingerup)
+            drawLine(ctx, draw_data.x, draw_data.y, null, true, draw_data.fingerup)
         }
 
         function initCanvasAndSocketIO() {
@@ -148,7 +171,11 @@
 
             // Check that we have a valid context to draw on/with before adding event handlers
             if (ctx) {
-
+                canvas.style.width = document.body.clientWidth;
+                canvas.style.height = document.body.clientHeight;
+                ctx.webkitImageSmoothingEnabled = false;
+                ctx.mozImageSmoothingEnabled = false;
+                ctx.imageSmoothingEnabled = false;
                 initSocketIO('screen') // function in socketlogic.js
             }
         }
@@ -157,6 +184,9 @@
             delimiters: ['${', '}'], // to avoid clash with Jinja2 moustaches
             el: '#vue-app',
             data: {
+                timerID: null,
+                gameStarted: false,
+
                 guessedScreenVisible: false,
                 pointGoesToScreenVisible: false,
                 nextPlayerScreenMessageVisible: false,
@@ -178,7 +208,7 @@
                 players: playersFactory.players,
                 fullMesh: fullMesh,
                 timeleft: null,
-                options_roundTime: 360,
+                options_roundTime: 120,
 
                 alert: true,
                 msgvisible: false,
@@ -196,10 +226,12 @@
                     newDrawPosition = msg.data;
                     this.updateLocalMesh(newDrawPosition)
                 })
-                this.socket.on('welcome_new_player', (msg) => {
-                    console.log("Received:", msg.data)
-                    this.last_received_position = msg.data;
-                })*/
+                */
+
+                socket.on('welcome_new_remote', (msg) => {
+                    console.log("welcome_new_remote:", msg.data)
+
+                });
                 socket.on('display_drawn_line', (msg) => {
                     console.log("Received display_drawn_line:", msg.data)
                     recv_display_drawn_line(msg.data);
@@ -214,23 +246,76 @@
                 socket.on('addNewPlayer', this.addNewPlayer)
                 socket.on('options_roundTime', this.set_options_roundTime)
                 socket.on('guessed', this.guessed)
+                socket.on('guessedPause', this.guessedPause)
                 socket.on('pointGoesTo', this.pointGoesTo)
-                socket.on('next_player', this.nextplayer)
+                socket.on('next_player', this.next_player)
                 //k socket.on('showNextPlayerMessage', this.showNextPlayerMessage)
                 //socket.on('resetClock', this.resetClock)
                 // socket.on('showNextPlayerMessage', this.showNextPlayerMessage)
                 socket.on('nextPlayerConfirmed', this.nextPlayerConfirmed)
+
                 socket.on('pause', this.pause)
                 socket.on('unpause', this.unpause)
                 //  socket.on('clearCanvas', this.clearCanvas)
                 socket.on('send_clear', this.send_clear)
+                //todo start timer
 
             }, // end of mounted
+            watch: {
+                timeleft(nuVal) {
+                    if (nuVal === 0) {
+                        this.onTimesUp();
+                    }
+                }
+            },
+            computed: {
+                timeleftMMSS() {
+                    return this.formatTime(this.timeleft)
+                },
+            },
             methods: {
+                guessedPause(socketmsg) {
+                    this.paused = !this.paused;
+                },
+                formatTime(time) {
+                    let mins = time % (60 * 60);
+                    let minutes = Math.floor(mins / 60);
+
+                    let secd = mins % 60;
+                    let seconds = Math.ceil(secd);
+                    if (seconds < 10) {
+                        seconds = `0${seconds}`;
+                    }
+                    return `${minutes}:${seconds}`;
+                },
+                startGame(socketmsg) {
+                    if (!(this.players.length > 0 && this.teams.length > 1)) {
+                        this.showMsg('not enough players and teams !!')
+                        return;
+                    }
+                    if (!this.gameStarted) {
+                        this.gameStarted = true;
+                        this.currentplayerindex = -1;
+
+                    };
+                },
+                startTimer() {
+                    this.resetClock();
+                    this.paused = false;
+                    this.timerID = setInterval(() => {
+                        if (!this.paused) {
+                            this.timeleft -= 1
+                        }
+                    }, 1000);
+                },
+                onTimesUp() {
+                    clearInterval(this.timerID);
+                    resetClock();
+                },
                 getPlayerTeam(player) {
                     return this.teams[player.teamId];
                 },
-                unpause() {
+                unpause(socketmsg) {
                     this.paused = false
                 },
                 // this is not received over socket, only used locally if needed
@@ -255,7 +340,8 @@
                     let nuPlayer = playersFactory.createPlayer(rcvdPlayer);
                     let plrTeamId = rcvdPlayer.teamId
                     let plrTeam = this.teams[plrTeamId]
-                    plrTeam.players.push(nuPlayer); // dont f9rget to push him to teh team on the screen side
+                    plrTeam.players.push(
+                        nuPlayer); // dont f9rget to push him to teh team on the screen side
                     // how to send new Player's team over socket, without circular dependencies ? 
                     // try to assign id (array index)
                     this.showMsg(
@@ -266,6 +352,9 @@
                     let val = socketmsg.data;
                     console.log('rcvd timeset:' + val)
                     this.options_roundTime = parseInt(val);
+
+                    let msgtime = this.formatTime(this.options_roundTime)
+                    this.showMsg(`turn time has been set to ${msgtime}`)
                 },
                 guessed(socketmsg) {
                     this.guessedScreenVisible = true;
@@ -285,28 +374,31 @@
 
                     // cycle through players(teams)array
                     clearCanvas();
-                    resetClock();
+                    this.resetClock();
                     // TODO: like with setting time , screen needs to know what players and teams are available
-                    this.currentplayerindex = this.currentplayerindex === this.players.length - 1 ?
-                        0 : this.currentplayerindex + 1;
+                    // this.currentplayerindex = this.currentplayerindex === this.players.length - 1 ?
+                    //     0 : this.currentplayerindex + 1;
+                    // this.currentplayer = this.players[this.currentplayerindex];
+                    this.currentplayerindex = socketmsg.data;
                     this.currentplayer = this.players[this.currentplayerindex];
-                    showNextPlayerMessage();
+                    this.showNextPlayerMessage();
+                    //this.showMsg("next Player " + this.currentplayer.name);
                 },
                 showNextPlayerMessage() {
                     this.nextPlayerScreenMessageVisible = true;
                 },
-                nextPlayerConfirmed() {
+                nextPlayerConfirmed(socketmsg) {
                     this.nextPlayerScreenMessageVisible = false;
-                    this.paused = false; //starts clock refresh
-                    socket.emit('nextPlayerConfirmed', {
-                        data: 1
-                    });
+                    this.startTimer()
                 },
                 resetClock() {
+
                     this.timeleft = this.options_roundTime;
+                    clearInterval(this.timerID);
                 },
-                pause() {
+                pause(socketmsg) {
                     this.paused = true; //stops clock and canvas
+                    this.showMsg("paused")
                 },
 
                 clearCanvas() {
@@ -338,6 +430,22 @@
     </script>
     </div>
     <style>
+        span {
+            border: 1px solid sandybrown;
+            margin: 10px;
+        }
+
+        .points {
+            font-size: 2em;
+        }
+
+        .currentPlayer {
+            font-size: 1em;
+            background-color: rgb(245, 204, 169);
+            border: 1px solid sandybrown;
+        }
+
+
         body,
         html {
             margin: 0px;
@@ -365,12 +473,67 @@
 
 
         #pictionary {
-            height: 45vw;
-            width: 60vw;
+            height: 68vw;
+            width: 90vw;
             border: 2px solid #888;
             border-radius: 4px;
             position: relative;
             /* Necessary for correct mouse co-ords in Firefox */
+        }
+
+        canvas {
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: -o-crisp-edges;
+            image-rendering: crisp-edges;
+            -ms-interpolation-mode: nearest-neighbor;
+        }
+
+        .timer {
+            font-size: 3em;
+        }
+
+        .modal {
+            position: fixed;
+            z-index: 1;
+            padding-top: 100px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fafafa;
+            margin: auto;
+            padding: 10px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaaaaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .pausedCanvasStyle {
+            opacity: 0.3;
+            pointer-events: none;
+            background-color: gray;
         }
     </style>
 </body>

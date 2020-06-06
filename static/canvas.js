@@ -2,7 +2,7 @@
 var canvas, ctx;
 var fullMesh = [];
 var fingerOrMouseIsUp = true;
-var pentip_size = 4;
+var pentip_size = 1;
 
 
 // Variables to keep track of the mouse position and left-button status 
@@ -19,6 +19,9 @@ var lastX, lastY = -1;
 // Draws a line between the specified position on the supplied canvas name
 // Parameters are: A canvas context, the x position, the y position, the size of the dot
 function drawLine(ctx, x, y, size, is_received, fingerOrMouseIsUpReceived) {
+    if (!size) {
+        size = pentip_size;
+    }
     console.log({
         ctx,
         x,
