@@ -495,9 +495,9 @@
                         // call canvas api
                         // function
                         clearCanvas()
-                        this.cc()
+                        this.clearCanvas()
                     },
-                    cc() {
+                    clearCanvas() {
                         socket.emit("clear", {
                             data: 'clear'
                         });
