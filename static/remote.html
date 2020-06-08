@@ -432,13 +432,15 @@
                         this.fullMesh.push({
                             x: x,
                             y: y,
-                            up: up
+                            up: up,
+                            tl: this.timeleft
                         })
                         socket.emit('pt', {
                             data: {
                                 x: x,
                                 y: y,
-                                up: up
+                                up: up,
+                                tl: this.timeleft
                             }
                         });
                     },

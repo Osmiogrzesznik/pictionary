@@ -205,7 +205,9 @@ def ws_cc(message):
 @socketio.on('pt', namespace='/remote')
 def ws_program(message):
     global state
-    state['pt'] = message['data']
+    pt = message['data']
+    state['pt'] = pt
+    state['timeleft'] = pt['tl']
     #print('Message: ' + str(message['data']))
     emit('display_drawn_line', {
          'data': message['data']}, namespace='/screen', broadcast=True)
@@ -232,7 +234,8 @@ def ws_connect_screen():
     global state
     state['connect'] = message['data']
     global screens_inc
-    # if somebody accidentally gets disconnected  we need to keep copy of all drawn and deleted dots?
+    # DONE  if somebody accidentally gets disconnected  we need to keep copy of all drawn and deleted dots?
+    # on new screen connected state is send to keep new nodes up to date
     screens_inc += 1
 
     print('screen connected')
@@ -241,15 +244,15 @@ def ws_connect_screen():
     emit('welcome_new_screen', {'data': screens_inc},
          namespace="/screen", broadcast=True)
 
-
-@socketio.on('full_state', namespace='/screen')
-def ws_full_state():
-    global state
-    state['full_state'] = message['data']
-    global screens
-    # if somebody accidentally gets disconnected  we need to keep copy of all drawn and deleted dots?
-    print('full_state_requested')
-    emit('full_state_request', {'data': now_timestamp()})
+# not needed implement state update on connect
+# @socketio.on('full_state', namespace='/screen')
+# def ws_full_state():
+#     global state
+#     state['full_state'] = message['data']
+#     global screens
+#     # if somebody accidentally gets disconnected  we need to keep copy of all drawn and deleted dots?
+#     print('full_state_requested')
+#     emit('full_state_request', {'data': now_timestamp()})
 
 
 @socketio.on('connect', namespace='/remote')
