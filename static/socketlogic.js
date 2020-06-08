@@ -19,5 +19,5 @@ function send_score_update(chosenGusesser) {
 }
 
 function send_drawn(draw_data) {
-    socket.emit("player_drawn_new_line", draw_data)
+    socket.emit("pt", draw_data)
 }

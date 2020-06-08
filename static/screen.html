@@ -158,7 +158,7 @@
 
         function recv_display_drawn_line(draw_data) {
             console.log("received:" + JSON.stringify(draw_data))
-            drawLine(ctx, draw_data.x, draw_data.y, null, true, draw_data.fingerup)
+            drawLine(ctx, draw_data.x, draw_data.y, null, true, draw_data.up)
         }
 
         function initCanvasAndSocketIO() {
@@ -257,7 +257,7 @@
                 socket.on('pause', this.pause)
                 socket.on('unpause', this.unpause)
                 //  socket.on('clearCanvas', this.clearCanvas)
-                socket.on('send_clear', this.send_clear)
+                socket.on('cc', this.clearCanvas)
                 //todo start timer
 
             }, // end of mounted
@@ -405,10 +405,9 @@
                     // call canvas api
                     // function
                     clearCanvas()
-                    this.send_clear()
+                    this.clearCanvas()
                 },
-                send_clear() {
-                    socket.emit("clear");
+                clearCanvas() {
                     this.saveDrawingToDB(); //should be done byscreen or server 
                 },
                 DONEINSCREENupdateLocalMesh(newDrawPosition) {

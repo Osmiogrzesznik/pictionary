@@ -270,8 +270,8 @@
                     this.socket = socket // this is if html served from python not from external cloud
                     // in case of external site this site must know what ip address of Game Master is
 
-                    onDrawDotEventHandler = (x, y, fingerup) => {
-                        this.onDrawDotEventHandler(x, y, fingerup)
+                    onDrawDotEventHandler = (x, y, up) => {
+                        this.onDrawDotEventHandler(x, y, up)
                     }
                     this.autoTeamList();
                     socket.on('welcome_new_remote', (socketmsg) => {
@@ -427,18 +427,18 @@
                             teamId: -1
                         };
                     },
-                    onDrawDotEventHandler(x, y, fingerup) {
-                        console.log(x, y, fingerup);
+                    onDrawDotEventHandler(x, y, up) {
+                        console.log(x, y, up);
                         this.fullMesh.push({
                             x: x,
                             y: y,
-                            fingerup: fingerup
+                            up: up
                         })
-                        socket.emit('player_drawn_new_line', {
+                        socket.emit('pt', {
                             data: {
                                 x: x,
                                 y: y,
-                                fingerup: fingerup
+                                up: up
                             }
                         });
                     },
@@ -495,9 +495,9 @@
                         // call canvas api
                         // function
                         clearCanvas()
-                        this.send_clear()
+                        this.cc()
                     },
-                    send_clear() {
+                    cc() {
                         socket.emit("clear", {
                             data: 'clear'
                         });
