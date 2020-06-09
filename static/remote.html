@@ -496,16 +496,11 @@
                     clearCanvas() {
                         // call canvas api
                         // function
-                        clearCanvas()
-                        this.clearCanvas()
-                    },
-                    clearCanvas() {
-                        socket.emit("clear", {
-                            data: 'clear'
+                        canvas_clearCanvas()
+                        socket.emit("cc", {
+                            data: 1,
                         });
-                        //  this.saveDrawingToDB(); //should be done byscreen or server 
                     },
-
                 }, // end of methods
             }); // end of new Vue
         </script>

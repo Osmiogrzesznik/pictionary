@@ -236,12 +236,6 @@
                     console.log("Received display_drawn_line:", msg.data)
                     recv_display_drawn_line(msg.data);
                 });
-                socket.on('clear', (msg) => {
-                    console.log("Received clear:", msg.data)
-                    clearCanvas();
-
-
-                });
                 socket.on('addNewTeam', this.addNewTeam)
                 socket.on('addNewPlayer', this.addNewPlayer)
                 socket.on('options_roundTime', this.set_options_roundTime)
@@ -373,7 +367,7 @@
                     // removed resetClock receiver
 
                     // cycle through players(teams)array
-                    clearCanvas();
+                    this.clearCanvas();
                     this.resetClock();
                     // TODO: like with setting time , screen needs to know what players and teams are available
                     // this.currentplayerindex = this.currentplayerindex === this.players.length - 1 ?
@@ -404,11 +398,8 @@
                 clearCanvas() {
                     // call canvas api
                     // function
-                    clearCanvas()
-                    this.clearCanvas()
-                },
-                clearCanvas() {
-                    this.saveDrawingToDB(); //should be done byscreen or server 
+                    canvas_clearCanvas()
+                    // this.saveDrawingToDB(); //should be done byscreen or server 
                 },
                 DONEINSCREENupdateLocalMesh(newDrawPosition) {
                     this.last_received_position = newDrawPosition;

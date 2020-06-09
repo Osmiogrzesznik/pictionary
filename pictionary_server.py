@@ -33,28 +33,28 @@ state = {
     'fullMesh': {},
     'timeleft': 120,  # this will need to be sent along with each drawn dot
     'c_options_roundTime': 120,
-    # 'currentplayer': null, Avoid circular refs in JSON
-    'currentplayerindex': null,
-    'guessed': null,
-    'pointGoesTo': null,
-    'next_player': null,
-    'guessedPause': null,
-    'resetClock': null,
-    'showNextPlayerMessage': null,
-    'nextPlayerConfirmed': null,
-    'resetClock': null,
-    'pause': null,
-    'unpause': null,
-    'clearCanvas': null,
-    'cc': null,
-    'pt': null,
-    'clear': null,
-    'game_started': null,
-    'connect': null,
-    'full_state': null,
-    'connect': null,
-    'disconnect': null,
-    'disconnect': null,
+    # 'currentplayer': None, Avoid circular refs in JSON
+    'currentplayerindex': None,
+    'guessed': None,
+    'pointGoesTo': None,
+    'next_player': None,
+    'guessedPause': None,
+    'resetClock': None,
+    'showNextPlayerMessage': None,
+    'nextPlayerConfirmed': None,
+    'resetClock': None,
+    'pause': None,
+    'unpause': None,
+    'clearCanvas': None,
+    'cc': None,
+    'pt': None,
+    'clear': None,
+    'game_started': None,
+    'connect': None,
+    'full_state': None,
+    'connect': None,
+    'disconnect': None,
+    'disconnect': None,
 }
 
 
@@ -232,7 +232,6 @@ def ws_program(message):
 @socketio.on('connect', namespace='/screen')
 def ws_connect_screen():
     global state
-    state['connect'] = message['data']
     global screens_inc
     # DONE  if somebody accidentally gets disconnected  we need to keep copy of all drawn and deleted dots?
     # on new screen connected state is send to keep new nodes up to date
@@ -258,7 +257,6 @@ def ws_connect_screen():
 @socketio.on('connect', namespace='/remote')
 def ws_connect_remote():
     global state
-    state['connect'] = message['data']
     global remotes_inc
     # TODO do not accept more connections, reject connections
     # google for rejecting new connections
@@ -275,7 +273,6 @@ def ws_connect_remote():
 @socketio.on('disconnect', namespace='/remote')
 def ws_disconnect_remote():
     global state
-    state['disconnect'] = message['data']
     global remotes_inc
     print('remote disconnected')
     remotes_inc -= 1
@@ -288,7 +285,6 @@ def ws_disconnect_remote():
 @socketio.on('disconnect', namespace='/screen')
 def ws_disconnect_screen():
     global state
-    state['disconnect'] = message['data']
     global screens_inc
     print('screen disconnected')
     screens_inc -= 1

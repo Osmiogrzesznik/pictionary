@@ -83,7 +83,7 @@ function drawLine(ctx, x, y, size, is_received, fingerOrMouseIsUpReceived) {
 }
 
 // Clear the canvas context using the canvas width and height
-function clearCanvas() {
+function canvas_clearCanvas() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
