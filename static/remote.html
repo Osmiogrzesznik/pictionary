@@ -36,6 +36,13 @@
                 <button @click="timeSettingVisible = false">done</button>
             </div>
 
+            <hr>
+            settings<br>
+            </hr>
+            <button>Load from JSON
+                <input type="file" id="f2" @change="loadStringFromFile($event,loadFromJSON)" />
+            </button>
+            <button class="kupa" @click.stop="saveToJSON">SAVE as JSON</button>
             <button @click="addTeamVisible = !addTeamVisible">addTeam</button>
             <div v-if="addTeamVisible" class="submenu">
                 <br>team name:</input><input v-model="newTeam.name"></input>
@@ -47,6 +54,7 @@
             <div v-if="addPlayerVisible" class="submenu">
                 <button @click="selectteamsvisible = !selectteamsvisible">selectTeam</button>
                 <div v-if="selectteamsvisible" class="teamsbtns">
+                    <div v-if="!teams.length">NO TEAMS CREATED</div>
                     <button v-for="team in teams" @click="selectTeamForNewPlayer(team)">
                         ${team.name}
                     </button>
@@ -60,12 +68,19 @@
                 <br>Player picture:<input v-model="newPlayer.picture"></input>
                 <button @click="addNewPlayer">done</button>
             </div>
-
+            <hr>
+            start and stop<br>
+            </hr>
 
             <button v-if="!gameStarted" @click="startGame">start game</button>
             <button v-if="!paused" @click="pause">pause</button>
             <button v-if="paused" @click="unpause">unpause</button>
 
+            <button @click="resetGameVisible = true">reset game</button>
+            <div v-if="resetGameVisible" class="submenu">
+                <button @click="resetGame">yes</button>
+                <button @click="resetGameVisible = false">no</button>
+            </div>
 
             <div v-if="nextPlayerMessageVisible" class="modal">
                 <div class="modal-content">
@@ -155,40 +170,6 @@
             var teamsFactory = new TeamsFactory(0);
             var playersFactory = new PlayersFactory(0);
 
-            DefTeams = [{
-                    name: "Druzyna A",
-                    players: [],
-                    points: 0
-                },
-                {
-                    name: "Druzyna RR",
-                    players: [],
-                    points: 0
-                }
-            ]
-            DefPlayers = [{
-                    name: 'Bolek',
-                    picture: ``,
-                    teamId: 0,
-                },
-                {
-                    name: 'Ania',
-                    picture: ``,
-                    teamId: 1,
-                },
-
-                {
-                    name: 'Maurycy',
-                    picture: ``,
-                    teamId: 1,
-                },
-
-                {
-                    name: 'Piotrek',
-                    picture: ``,
-                    teamId: 0,
-                },
-            ];
 
             function awardGuesser(chosenTeam) {
                 ++chosenTeam.points; //this could be done with vue on screen cli
@@ -232,7 +213,7 @@
                 data: {
                     timerID: null,
                     gameStarted: false,
-
+                    resetGameVisible: false,
                     addTeamVisible: false,
                     addPlayerVisible: false,
                     timeSettingVisible: false,
@@ -247,7 +228,7 @@
                     newPlayer: {
                         name: '',
                         picture: ``,
-                        teamId: null,
+                        teamId: -1,
                     },
                     teamThatWon: null,
                     menuopened: false,
@@ -273,7 +254,6 @@
                     onDrawDotEventHandler = (x, y, up) => {
                         this.onDrawDotEventHandler(x, y, up)
                     }
-                    this.autoTeamList();
                     socket.on('welcome_new_remote', (socketmsg) => {
                         console.log(`welcome new remote , connections amount: ${socketmsg.data}`);
 
@@ -309,6 +289,109 @@
                     },
                 }, // end of computed
                 methods: {
+                    resetGame() {
+
+                        teamsFactory = new TeamsFactory(0);
+                        playersFactory = new PlayersFactory(0);
+                        fullMesh = [];
+                        canvas_clearCanvas();
+                        clearInterval(this.timerID);
+
+
+                        this.timerID = null;
+                        this.gameStarted = false;
+                        this.addTeamVisible = false;
+                        this.addPlayerVisible = false;
+                        this.timeSettingVisible = false;
+                        this.selectteamsvisible = false;
+                        this.teamsbtnsvisible = false;
+                        this.nextPlayerMessageVisible = false;
+                        this.newTeam = {
+                            name: "",
+                            players: [],
+                            points: 0,
+                        };
+                        this.newPlayer = {
+                            name: '',
+                            picture: ``,
+                            teamId: -1,
+                        };
+                        this.teamThatWon = null;
+                        this.menuopened = false;
+                        this.paused = false;
+                        this.fullMesh = fullMesh;
+
+                        this.teams = teamsFactory.teams;
+                        this.players = playersFactory.players;
+                        this.fullMesh = fullMesh;
+
+                        this.timeleft = null;
+                        this.c_options_roundTime = 120;
+                        this.currentplayer = null;
+                        this.currentplayerindex = null;
+                        this.alert = true;
+                        this.msgvisible = false;
+                        this.textShownMsg = '';
+                        socket.emit('resetStateServer', {
+                            data: 1
+                        })
+                        resetGameVisible = false;
+                        this.showMsg("the game was reset")
+                    },
+                    updateFromObject(d) {
+                        // TODO need to loop through arrays invoking addNewTeam etc.
+                        d.teams.forEach(team => {
+                            team.players = []; // clear players array it will be filled in this function
+                            this.newTeam = team;
+                            this.addNewTeam();
+                        })
+
+                        d.players.forEach(player => {
+                            this.newPlayer = player;
+                            this.addNewPlayer();
+                        })
+                    },
+                    saveToJSON() {
+                        a = JSON.stringify(this.getDataToSave(), null, 2);
+                        this.saveStringToFile(a, ".json");;
+                    },
+                    getDataToSave() {
+                        currentDate = new Date();
+
+                        u = {
+                            teams: this.teams,
+                            players: this.players,
+                            when: currentDate.toGMTString(),
+                            timestamp: currentDate.getTime()
+                        };
+                        return u;
+                    },
+                    loadStringFromFile(ev, func) {
+                        file = ev.target.files[0];
+                        const reader = new FileReader();
+                        reader.onload = ev => func(ev.target.result, file);
+                        reader.readAsText(file);
+                    },
+                    saveStringToFile(string_to_save, ext) {
+                        console.log(string_to_save);
+                        _fnm = "PictionarySave_teamsandplayers"
+                        var d = Date.now();
+                        datepostfix = "___" + d;
+                        saveText(string_to_save, _fnm + datepostfix + ext);
+                    },
+                    loadFromJSON(dt, file) {
+                        console.log("loading form JSON", dt)
+                        try {
+                            ob = JSON.parse(dt);
+                            this.updateFromObject(ob);
+                        } catch (e) {
+                            alert("Json format in the file is not compatible with this app")
+                            throw e;
+                        }
+
+                    },
+
+
                     guessedPause() {
                         this.teamsbtnsvisible = !this.teamsbtnsvisible;
                         this.paused = !this.paused
@@ -360,17 +443,6 @@
                         this.newPlayer.teamId = team.id;
                         this.selectteamsvisible = false;
                         this.showMsg("selected team")
-                    },
-                    autoTeamList() {
-                        DefTeams.forEach(team => {
-                            this.newTeam = team;
-                            this.addNewTeam();
-                        })
-
-                        DefPlayers.forEach(player => {
-                            this.newPlayer = player;
-                            this.addNewPlayer();
-                        })
                     },
                     unpause() {
                         this.paused = false;
@@ -503,6 +575,16 @@
                     },
                 }, // end of methods
             }); // end of new Vue
+
+
+
+
+            function saveText(text, filename) {
+                var a = document.createElement('a');
+                a.setAttribute('href', 'data:text/plain;charset=utf-u,' + encodeURIComponent(text));
+                a.setAttribute('download', filename);
+                a.click();
+            }
         </script>
     </div>
 </body>

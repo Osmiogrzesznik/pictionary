@@ -17,45 +17,50 @@ screens = []
 remotes_inc = 0
 screens_inc = 0
 game_started = False
-state = {
-    'teams': [],
-    'players': [],
-    'turn_time': 120,
-    'gameStarted': False,
+state = {}
 
-    'addTeamVisible': False,
-    'addPlayerVisible': False,
-    'timeSettingVisible': False,
-    'selectteamsvisible': False,
-    'teamsbtnsvisible': False,
-    'nextPlayerMessageVisible': False,
-    'paused': False,
-    'fullMesh': {},
-    'timeleft': 120,  # this will need to be sent along with each drawn dot
-    'c_options_roundTime': 120,
-    # 'currentplayer': None, Avoid circular refs in JSON
-    'currentplayerindex': None,
-    'guessed': None,
-    'pointGoesTo': None,
-    'next_player': None,
-    'guessedPause': None,
-    'resetClock': None,
-    'showNextPlayerMessage': None,
-    'nextPlayerConfirmed': None,
-    'resetClock': None,
-    'pause': None,
-    'unpause': None,
-    'clearCanvas': None,
-    'cc': None,
-    'pt': None,
-    'clear': None,
-    'game_started': None,
-    'connect': None,
-    'full_state': None,
-    'connect': None,
-    'disconnect': None,
-    'disconnect': None,
-}
+
+def reset_state():
+    global state
+    state = {
+        'teams': [],
+        'players': [],
+        'turn_time': 120,
+        'gameStarted': False,
+
+        'addTeamVisible': False,
+        'addPlayerVisible': False,
+        'timeSettingVisible': False,
+        'selectteamsvisible': False,
+        'teamsbtnsvisible': False,
+        'nextPlayerMessageVisible': False,
+        'paused': False,
+        'fullMesh': {},
+        'timeleft': 120,  # this will need to be sent along with each drawn dot
+        'c_options_roundTime': 120,
+        # 'currentplayer': None, Avoid circular refs in JSON
+        'currentplayerindex': None,
+        'guessed': None,
+        'pointGoesTo': None,
+        'next_player': None,
+        'guessedPause': None,
+        'resetClock': None,
+        'showNextPlayerMessage': None,
+        'nextPlayerConfirmed': None,
+        'resetClock': None,
+        'pause': None,
+        'unpause': None,
+        'clearCanvas': None,
+        'cc': None,
+        'pt': None,
+        'clear': None,
+        'game_started': None,
+        'connect': None,
+        'full_state': None,
+        'connect': None,
+        'disconnect': None,
+        'disconnect': None,
+    }
 
 
 def now_timestamp():
@@ -208,9 +213,18 @@ def ws_program(message):
     pt = message['data']
     state['pt'] = pt
     state['timeleft'] = pt['tl']
-    #print('Message: ' + str(message['data']))
+    # print('Message: ' + str(message['data']))
     emit('display_drawn_line', {
          'data': message['data']}, namespace='/screen', broadcast=True)
+
+
+@socketio.on('resetStateServer', namespace='/remote')
+def ws_program(message):
+    reset_state()
+    emit('resetState', {
+         'data': 1}, namespace='/screen', broadcast=True)
+    emit('resetState', {
+         'data': 1}, namespace='/remote', broadcast=True)
 
 
 @socketio.on('clear', namespace='/remote')
@@ -232,16 +246,20 @@ def ws_program(message):
 @socketio.on('connect', namespace='/screen')
 def ws_connect_screen():
     global state
-    global screens_inc
+    global screens_inc, remotes_inc
+
     # DONE  if somebody accidentally gets disconnected  we need to keep copy of all drawn and deleted dots?
     # on new screen connected state is send to keep new nodes up to date
     screens_inc += 1
 
     print('screen connected')
+
     emit('welcome_new_screen', {'data': screens_inc},
          namespace="/remote", broadcast=True)
     emit('welcome_new_screen', {'data': screens_inc},
          namespace="/screen", broadcast=True)
+    if remotes_inc > 0:  # if there is a remote connected it probably had issued changes to game state, thus welcome new screen with actual data
+        emit('fullState', {'data': state})
 
 # not needed implement state update on connect
 # @socketio.on('full_state', namespace='/screen')
@@ -302,6 +320,7 @@ def index():
 
 # check to see if this is the main thread of execution
 if __name__ == '__main__':
+    reset_state()
     # start the socketio and associated flask app
     socketio.run(app, host='0.0.0.0', port=8080,
                  debug=True, use_reloader=False)

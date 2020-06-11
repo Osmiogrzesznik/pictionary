@@ -1,0 +1,70 @@
+{
+  "teams": [
+    {
+      "name": "Druzyna A",
+      "id": 0,
+      "players": [
+        {
+          "id": 0,
+          "name": "Bolek",
+          "picture": "nopicture.png",
+          "teamId": 0
+        },
+        {
+          "id": 3,
+          "name": "Piotrek",
+          "picture": "nopicture.png",
+          "teamId": 0
+        }
+      ],
+      "points": 0
+    },
+    {
+      "name": "Druzyna RR",
+      "id": 1,
+      "players": [
+        {
+          "id": 1,
+          "name": "Ania",
+          "picture": "nopicture.png",
+          "teamId": 1
+        },
+        {
+          "id": 2,
+          "name": "Maurycy",
+          "picture": "nopicture.png",
+          "teamId": 1
+        }
+      ],
+      "points": 0
+    }
+  ],
+  "players": [
+    {
+      "id": 0,
+      "name": "Bolek",
+      "picture": "nopicture.png",
+      "teamId": 0
+    },
+    {
+      "id": 1,
+      "name": "Ania",
+      "picture": "nopicture.png",
+      "teamId": 1
+    },
+    {
+      "id": 2,
+      "name": "Maurycy",
+      "picture": "nopicture.png",
+      "teamId": 1
+    },
+    {
+      "id": 3,
+      "name": "Piotrek",
+      "picture": "nopicture.png",
+      "teamId": 0
+    }
+  ],
+  "when": "Tue, 09 Jun 2020 21:14:48 GMT",
+  "timestamp": 1591737288453
+}

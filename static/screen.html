@@ -243,14 +243,11 @@
                 socket.on('guessedPause', this.guessedPause)
                 socket.on('pointGoesTo', this.pointGoesTo)
                 socket.on('next_player', this.next_player)
-                //k socket.on('showNextPlayerMessage', this.showNextPlayerMessage)
-                //socket.on('resetClock', this.resetClock)
-                // socket.on('showNextPlayerMessage', this.showNextPlayerMessage)
                 socket.on('nextPlayerConfirmed', this.nextPlayerConfirmed)
-
                 socket.on('pause', this.pause)
                 socket.on('unpause', this.unpause)
-                //  socket.on('clearCanvas', this.clearCanvas)
+                socket.on('fullState', this.fullState)
+                socket.on('resetState', this.resetGame)
                 socket.on('cc', this.clearCanvas)
                 //todo start timer
 
@@ -268,6 +265,65 @@
                 },
             },
             methods: {
+                resetGame(socketmsgs) {
+                    teamsFactory = new TeamsFactory(0);
+                    playersFactory = new PlayersFactory(0);
+                    fullMesh = [];
+                    canvas_clearCanvas();
+                    clearInterval(this.timerID);
+
+
+                    this.timerID = null;
+                    this.gameStarted = false;
+                    this.addTeamVisible = false;
+                    this.addPlayerVisible = false;
+                    this.timeSettingVisible = false;
+                    this.selectteamsvisible = false;
+                    this.teamsbtnsvisible = false;
+                    this.nextPlayerMessageVisible = false;
+                    this.newTeam = {
+                        name: "",
+                        players: [],
+                        points: 0,
+                    };
+                    this.newPlayer = {
+                        name: '',
+                        picture: ``,
+                        teamId: -1,
+                    };
+                    this.teamThatWon = null;
+                    this.menuopened = false;
+                    this.paused = false;
+                    this.fullMesh = fullMesh;
+
+                    this.teams = teamsFactory.teams;
+                    this.players = playersFactory.players;
+                    this.fullMesh = fullMesh;
+
+                    this.timeleft = null;
+                    this.c_options_roundTime = 120;
+                    this.currentplayer = null;
+                    this.currentplayerindex = null;
+                    this.alert = true;
+                    this.msgvisible = false;
+                    this.textShownMsg = '';
+                    socket.emit('resetStateServer', {
+                        data: 1
+                    })
+                },
+                fullState(socketmsg) {
+                    d = socketmsg.data;
+                    const ans = prompt('download all data from server?', "ok")
+                    if (!ans && !ans.length && ans === "no") {
+                        return;
+                    }
+
+
+                    Object.entries(d).forEach(([key, value]) => {
+                        console.log(`${key} ${value}`); // "a 5", "b 7", "c 9"
+                        this[key] = value
+                    });
+                },
                 guessedPause(socketmsg) {
                     this.paused = !this.paused;
                 },
