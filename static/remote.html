@@ -31,9 +31,13 @@
             </div>
             <!-- <button @click="settings">settings</button> -->
             <button @click="timeSettingVisible = !timeSettingVisible">settime</button>
-            <div v-if="timeSettingVisible" class="submenu">
-                <input v-model="options_roundTime" @keyup.enter="timeSettingVisible = false">360</input>
-                <button @click="timeSettingVisible = false">done</button>
+            <div v-if="timeSettingVisible" class="modal">
+                <div class="submenu modal-content">
+                    <span class="close" @click="timeSettingVisible = false">&times;</span>
+                    <input v-model="options_roundTime" @keyup.enter="timeSettingVisible = false">360</input>
+                    <button @click="timeSettingVisible = false">done</button>
+                </div>
+
             </div>
 
             <hr>
@@ -44,29 +48,35 @@
             </button>
             <button class="kupa" @click.stop="saveToJSON">SAVE as JSON</button>
             <button @click="addTeamVisible = !addTeamVisible">addTeam</button>
-            <div v-if="addTeamVisible" class="submenu">
-                <br>team name:</input><input v-model="newTeam.name"></input>
-                <button @click="addNewTeam">done</button>
+            <div v-if="addTeamVisible" class="modal">
+                <div class="submenu modal-content">
+                    <span class="close" @click="addTeamVisible = false">&times;</span>
+                    <br>team name:</input><input v-model="newTeam.name"></input>
+                    <button @click="addNewTeam">done</button>
+                </div>
             </div>
 
 
             <button @click="addPlayerVisible = !addPlayerVisible">addPlayer</button>
-            <div v-if="addPlayerVisible" class="submenu">
-                <button @click="selectteamsvisible = !selectteamsvisible">selectTeam</button>
-                <div v-if="selectteamsvisible" class="teamsbtns">
-                    <div v-if="!teams.length">NO TEAMS CREATED</div>
-                    <button v-for="team in teams" @click="selectTeamForNewPlayer(team)">
-                        ${team.name}
-                    </button>
-                </div>
-                <div>selected team:
+            <div v-if="addPlayerVisible" class="modal">
+                <div class="submenu modal-content">
+                    <span class="close" @click="addPlayerVisible = false">&times;</span>
+                    <button @click="selectteamsvisible = !selectteamsvisible">selectTeam</button>
+                    <div v-if="selectteamsvisible" class="teamsbtns">
+                        <div v-if="!teams.length">NO TEAMS CREATED</div>
+                        <button v-for="team in teams" @click="selectTeamForNewPlayer(team)">
+                            ${team.name}
+                        </button>
+                    </div>
+                    <div>selected team:
 
-                    <span>${getPlayerTeam(newPlayer)}</span>
+                        <span>${getPlayerTeam(newPlayer)}</span>
 
+                    </div>
+                    <br>Player name:<input v-model="newPlayer.name"></input>
+                    <br>Player picture:<input v-model="newPlayer.picture"></input>
+                    <button @click="addNewPlayer">done</button>
                 </div>
-                <br>Player name:<input v-model="newPlayer.name"></input>
-                <br>Player picture:<input v-model="newPlayer.picture"></input>
-                <button @click="addNewPlayer">done</button>
             </div>
             <hr>
             start and stop<br>
@@ -75,11 +85,16 @@
             <button v-if="!gameStarted" @click="startGame">start game</button>
             <button v-if="!paused" @click="pause">pause</button>
             <button v-if="paused" @click="unpause">unpause</button>
-
+            kazde submenu modal musi byc modalne,
+            bo czasem nie wiadomo cos sie dzieje . Naciskasz przycisk i nic, a pod
+            spodem pojawia sie div(jesli go nie widac to wydaje sie ze przycisk nie dziala)
             <button @click="resetGameVisible = true">reset game</button>
-            <div v-if="resetGameVisible" class="submenu">
-                <button @click="resetGame">yes</button>
-                <button @click="resetGameVisible = false">no</button>
+            <div v-if="resetGameVisible" class="modal">
+                <div class="submenu modal-content">
+                    <span class="close" @click="resetGameVisible = false">&times;</span>
+                    <button @click="resetGame">yes</button>
+                    <button @click="resetGameVisible = false">no</button>
+                </div>
             </div>
 
             <div v-if="nextPlayerMessageVisible" class="modal">
@@ -91,10 +106,13 @@
                     <button @click="nextPlayerConfirmed">Continue</button>
                     <span class="close" @click="nextPlayerConfirmed">&times;</span>
                 </div>
-                <div v-if="msgvisible" class="submenu">
-                    MESSAGE: <br>
-                    ${textShownMsg}
-                    <button @click="msgvisible = false">OK</button>
+                <div v-if="msgvisible" class="modal">
+                    <div class="submenu modal-content">
+                        <span class="close" @click="msgvisible = false">&times;</span>
+                        MESSAGE: <br>
+                        ${textShownMsg}
+                        <button @click="msgvisible = false">OK</button>
+                    </div>
                 </div>
 
             </div>
