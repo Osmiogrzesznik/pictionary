@@ -318,11 +318,29 @@
                         return;
                     }
 
+                    // WRONG 
+                    //        Object.entries(d).forEach(([key, value]) => {
+                    //          console.log(`${key} ${value}`); // "a 5", "b 7", "c 9"
+                    //        this[key] = value
+                    //  });
+                    updateFromObject(d);
+                },
+                updateFromObject(d) {
+                    teamsFactory = new TeamsFactory(0),
+                        playersFactory = new PlayersFactory(0);
+                    this.teams = teamsFactory.teams,
+                        this.players = playersFactory.players;
+                    // TODO need to loop through arrays invoking addNewTeam etc.
+                    d.teams.forEach(team => {
+                        team.players = []; // clear players array it will be filled in this function
+                        this.newTeam = team;
+                        this.addNewTeam();
+                    })
 
-                    Object.entries(d).forEach(([key, value]) => {
-                        console.log(`${key} ${value}`); // "a 5", "b 7", "c 9"
-                        this[key] = value
-                    });
+                    d.players.forEach(player => {
+                        this.newPlayer = player;
+                        this.addNewPlayer();
+                    })
                 },
                 guessedPause(socketmsg) {
                     this.paused = !this.paused;
@@ -456,19 +474,6 @@
                     // function
                     canvas_clearCanvas()
                     // this.saveDrawingToDB(); //should be done byscreen or server 
-                },
-                DONEINSCREENupdateLocalMesh(newDrawPosition) {
-                    this.last_received_position = newDrawPosition;
-                    //{id,x,y}; when deleting use id to identify what was deleted
-                    this.localMesh.push(newDrawPosition);
-                },
-                DONEBYCANVASsendLastDrawnDot() {
-                    //# if somebody accidentally gets disconnected  we need to keep copy of all drawn and deleted dots?
-                    console.log("sending drawn dot:" + this.tosay);
-                    this.socket.emit('draw', {
-                        data: this.lastDrawnDot
-                    })
-                    this.tosay = "";
                 },
 
             }, // end of methods

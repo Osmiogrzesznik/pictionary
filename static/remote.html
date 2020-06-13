@@ -339,6 +339,10 @@
                         this.showMsg("the game was reset")
                     },
                     updateFromObject(d) {
+                        teamsFactory = new TeamsFactory(0),
+                            playersFactory = new PlayersFactory(0);
+                        this.teams = teamsFactory.teams,
+                            this.players = playersFactory.players;
                         // TODO need to loop through arrays invoking addNewTeam etc.
                         d.teams.forEach(team => {
                             team.players = []; // clear players array it will be filled in this function
